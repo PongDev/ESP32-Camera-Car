@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Stream</title>
+  </head>
+  <body>
+    <img src="" alt="Stream" height="500px" id="stream" />
+    <script>
+      const socket = new WebSocket("ws://localhost:3000/stream");
+      const streamImage = document.getElementById("stream");
+
+      const blobToBase64 = async (blob) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        return new Promise((resolve) => {
+          reader.onloadend = () => {
+            resolve(reader.result);
+          };
+        });
+      };
+
+      socket.addEventListener("message", async (e) => {
+        streamImage.src = await blobToBase64(e.data);
+      });
+    </script>
+  </body>
+</html>

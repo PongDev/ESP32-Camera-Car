@@ -1,6 +1,27 @@
+#pragma once
+
 #ifndef WEBSOCKET_H
 #define WEBSOCKET_H
 #include "esp_websocket_client.h"
+#undef send(a, b, c, d)
+
+struct WebsocketPayload {
+    char* buffer;
+    size_t len;
+
+    WebsocketPayload(char mode, char* buffer, size_t len) {
+        this->buffer = new char[len + 1];
+        this->buffer[0] = mode;
+        for (size_t i = 0; i < len; i++) {
+            this->buffer[i + 1] = buffer[i];
+        }
+        this->len = len + 1;
+    }
+
+    ~WebsocketPayload() {
+        delete[] buffer;
+    }
+};
 
 class Websocket {
    private:

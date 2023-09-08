@@ -7,8 +7,24 @@
   </head>
   <body>
     <img src="" alt="Stream" height="500px" id="stream" />
+    <div>
+      <div>Camera Name</div>
+      <input type="text" id="camera-name" />
+      <button onclick="connectCamera()">Connect Camera</button>
+    </div>
+    <div>
+      <div>Command Mode</div>
+      <input type="number" id="cmd-mode" />
+    </div>
+    <div>
+      <div>Command Text</div>
+      <input type="text" id="cmd-text" />
+    </div>
+    <div>
+      <button onclick="sendCommand()">Send Command</button>
+    </div>
     <script>
-      const socket = new WebSocket("ws://localhost:3000/stream");
+      let socket = null;
       const streamImage = document.getElementById("stream");
 
       const blobToBase64 = async (blob) => {
@@ -21,9 +37,26 @@
         });
       };
 
-      socket.addEventListener("message", async (e) => {
-        streamImage.src = await blobToBase64(e.data);
-      });
+      const sendCommand = () => {
+        const cmdMode = parseInt(document.getElementById("cmd-mode").value);
+        const cmdText = document.getElementById("cmd-text").value;
+        socket.send(String.fromCharCode(cmdMode) + cmdText);
+      };
+
+      const connectCamera = () => {
+        if (socket != null) {
+          socket.close();
+          streamImage.src = "";
+        }
+        socket = new WebSocket(
+          `ws://localhost:3000/controller/${
+            document.getElementById("camera-name").value
+          }`
+        );
+        socket.addEventListener("message", async (e) => {
+          streamImage.src = await blobToBase64(e.data);
+        });
+      };
     </script>
   </body>
 </html>

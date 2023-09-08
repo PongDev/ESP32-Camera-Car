@@ -14,5 +14,6 @@ struct Config {
     WifiConfigStruct wifi;
     WebsocketConfigStruct websocket;
     unsigned int fps;
+    const char* cameraName;
 };
 #endif

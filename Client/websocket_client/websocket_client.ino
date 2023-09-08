@@ -1,7 +1,9 @@
 #include <WiFi.h>
 
+#include "camera.h"
 #include "config.h"
 #include "esp_camera.h"
+#include "led.h"
 #include "websocket.h"
 
 //
@@ -36,7 +38,6 @@
 #include "camera_pins.h"
 
 void startCameraServer();
-void setupLedFlash(int pin);
 Websocket* websocket = NULL;
 
 void setup() {
@@ -127,7 +128,7 @@ void setup() {
 
 // Setup LED FLash if LED pin is defined in camera_pins.h
 #if defined(LED_GPIO_NUM)
-    setupLedFlash(LED_GPIO_NUM);
+    Led::setupLedFlash(LED_GPIO_NUM);
 #endif
 
     WiFi.begin(config.wifi.ssid, config.wifi.password);
@@ -148,17 +149,54 @@ void setup() {
 }
 
 void dataEventHandler(void* arg, esp_event_base_t base, int32_t id, void* data) {
-    if (arg != NULL) {
-        Serial.printf("Arg: %s\n", arg);
-    }
     esp_websocket_event_data_t* websocketData = (esp_websocket_event_data_t*)data;
-    char* payloadData = new char[websocketData->data_len + 1];
-    for (int i = 0; i < websocketData->data_len; i++) {
-        payloadData[i] = websocketData->data_ptr[i];
+    char* message = NULL;
+
+    if (websocketData->data_len > 0) {
+        Serial.printf("Received command mode: %d, Length: %d\n", (char)websocketData->data_ptr[0], websocketData->data_len);
+        switch (websocketData->data_ptr[0]) {
+            case 0:
+                message = new char[websocketData->data_len];
+                for (int i = 0; i < websocketData->data_len; i++) {
+                    message[i] = websocketData->data_ptr[i + 1];
+                }
+                message[websocketData->data_len - 1] = 0;
+                Serial.printf("Receive Message: %s\n", message);
+                delete[] message;
+                break;
+            case 1:
+                int ledDuty = 0;
+                for (int i = 1; i < websocketData->data_len; i++) {
+                    ledDuty *= 10;
+                    ledDuty += websocketData->data_ptr[i] - '0';
+                }
+                Led::setLedDuty(ledDuty);
+                break;
+        }
+        Serial.printf("Base: %s\nID: %d\nData: ", base, id);
+        for (int i = 0; i < websocketData->data_len; i++) {
+            Serial.printf("%c", websocketData->data_ptr[i]);
+        }
+        Serial.printf("\n\n");
     }
-    payloadData[websocketData->data_len] = 0;
-    Serial.printf("Base: %s\nID: %d\nData: %s\n\n", base, id, payloadData);
-    delete[] payloadData;
+}
+
+void resetWebsocket() {
+    websocket->stop();
+    delete websocket;
+    websocket = NULL;
+    Serial.println("Websocket reset");
+    delay(1000);
+}
+
+void sendWebsocketPayload(WebsocketPayload* payload) {
+    try {
+        websocket->send(payload->buffer, payload->len);
+        delete payload;
+    } catch (...) {
+        delete payload;
+        resetWebsocket();
+    }
 }
 
 void loop() {
@@ -174,34 +212,11 @@ void loop() {
             Serial.println("Websocket started");
         }
         delay(1000);
+        sendWebsocketPayload(new WebsocketPayload((char)0, (char*)config.cameraName, strlen(config.cameraName)));
     } else if (!websocket->isConnected()) {
-        Serial.println("Websocket disconnected");
-        websocket->stop();
-        delete websocket;
-        websocket = NULL;
-        delay(1000);
+        resetWebsocket();
     } else {
-        camera_fb_t* fb = NULL;
-        char* buffer = NULL;
-        try {
-            fb = esp_camera_fb_get();
-            size_t payloadLen = fb->len + 1;
-            buffer = new char[payloadLen];
-            buffer[0] = 1;
-            for (int i = 0; i < fb->len; i++) {
-                buffer[1 + i] = fb->buf[i];
-            }
-            websocket->send(buffer, payloadLen);
-            Serial.printf("%d\n", fb->len);
-        } catch (...) {
-            Serial.println("Websocket disconnected");
-            websocket->stop();
-            delete websocket;
-            websocket = NULL;
-            delay(1000);
-        }
-        delete[] buffer;
-        esp_camera_fb_return(fb);
+        sendWebsocketPayload(getCameraImagePayload((char)1));
         delay(1000 / config.fps == 0 ? 1 : config.fps);
     }
 }

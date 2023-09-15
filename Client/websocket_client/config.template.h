@@ -11,6 +11,13 @@ Config config{
         uri : "ws://websocket.domain",
         port : 80,
     },
+    motorPin : MotorPin{
+        motorPWMPin : 0,
+        enbLeftForwardPin : 0,
+        enbLeftBackwardPin : 0,
+        enbRightForwardPin : 0,
+        enbRightBackwardPin : 0,
+    },
     fps : 10,
     cameraName : "Camera Name",
 };

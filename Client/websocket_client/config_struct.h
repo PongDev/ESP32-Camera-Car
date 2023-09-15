@@ -10,9 +10,18 @@ struct WebsocketConfigStruct {
     const int port;
 };
 
+struct MotorPin {
+    uint8_t motorPWMPin;
+    uint8_t enbLeftForwardPin;
+    uint8_t enbLeftBackwardPin;
+    uint8_t enbRightForwardPin;
+    uint8_t enbRightBackwardPin;
+};
+
 struct Config {
     WifiConfigStruct wifi;
     WebsocketConfigStruct websocket;
+    MotorPin motorPin;
     unsigned int fps;
     const char* cameraName;
 };

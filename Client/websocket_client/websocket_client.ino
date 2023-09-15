@@ -4,6 +4,7 @@
 #include "config.h"
 #include "esp_camera.h"
 #include "led.h"
+#include "motor.h"
 #include "websocket.h"
 
 //
@@ -39,6 +40,7 @@
 
 void startCameraServer();
 Websocket* websocket = NULL;
+Motor* motor = NULL;
 
 void setup() {
     Serial.begin(115200);
@@ -146,11 +148,21 @@ void setup() {
     Serial.print("Camera Ready! Use 'http://");
     Serial.print(WiFi.localIP());
     Serial.println("' to connect");
+
+    // Setup Motor Pin
+    motor = new Motor(
+        config.motorPin.motorPWMPin,
+        config.motorPin.enbLeftForwardPin,
+        config.motorPin.enbLeftBackwardPin,
+        config.motorPin.enbRightForwardPin,
+        config.motorPin.enbRightBackwardPin);
 }
 
 void dataEventHandler(void* arg, esp_event_base_t base, int32_t id, void* data) {
     esp_websocket_event_data_t* websocketData = (esp_websocket_event_data_t*)data;
     char* message = NULL;
+    int ledDuty;
+    int motorDuty;
 
     if (websocketData->data_len > 0) {
         Serial.printf("Received command mode: %d, Length: %d\n", (char)websocketData->data_ptr[0], websocketData->data_len);
@@ -165,12 +177,39 @@ void dataEventHandler(void* arg, esp_event_base_t base, int32_t id, void* data) 
                 delete[] message;
                 break;
             case 1:
-                int ledDuty = 0;
+                ledDuty = 0;
                 for (int i = 1; i < websocketData->data_len; i++) {
                     ledDuty *= 10;
                     ledDuty += websocketData->data_ptr[i] - '0';
                 }
                 Led::setLedDuty(ledDuty);
+                break;
+            case 2:
+                switch (websocketData->data_ptr[1]) {
+                    case 'S':
+                        motorDuty = 0;
+                        for (int i = 2; i < websocketData->data_len; i++) {
+                            motorDuty *= 10;
+                            motorDuty += websocketData->data_ptr[i] - '0';
+                        }
+                        motor->setMotorPWMDuty(motorDuty);
+                        break;
+                    case 'X':
+                        motor->stop();
+                        break;
+                    case 'F':
+                        motor->moveFront();
+                        break;
+                    case 'B':
+                        motor->moveBack();
+                        break;
+                    case 'L':
+                        motor->moveLeft();
+                        break;
+                    case 'R':
+                        motor->moveRight();
+                        break;
+                }
                 break;
         }
         Serial.printf("Base: %s\nID: %d\nData: ", base, id);
@@ -218,5 +257,8 @@ void loop() {
     } else {
         sendWebsocketPayload(getCameraImagePayload((char)1));
         delay(1000 / config.fps == 0 ? 1 : config.fps);
+    }
+    if (millis() - motor->getLastActionTime() > 1000) {
+        motor->stop();
     }
 }

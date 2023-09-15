@@ -12,5 +12,6 @@ Config config{
         port : 80,
     },
     fps : 10,
+    cameraName : "Camera Name",
 };
 #endif

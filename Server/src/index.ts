@@ -3,6 +3,10 @@ import expressWs from "express-ws";
 import ws from "ws";
 import { v4 as uuidv4 } from "uuid";
 
+const config = {
+  port: 3000,
+};
+
 const app = expressWs(express()).app;
 
 const cameraWebSocket: {
@@ -38,6 +42,7 @@ app.ws("/", (ws: ws, req: Request) => {
             controllers: {},
           };
         }
+        console.log(`Client set name to ${clientName}`);
         break;
       case 1:
         for (const controllerWebsocket of Object.values(
@@ -50,6 +55,11 @@ app.ws("/", (ws: ws, req: Request) => {
         console.error("Unknown message type");
     }
   });
+
+  ws.on("close", (code: number, reason: Buffer) => {
+    console.log(`Client ${clientName} disconnected`);
+  });
+  console.log("Client connected");
   ws.send(String.fromCharCode(0) + "Connected!");
 });
 
@@ -67,6 +77,9 @@ app.ws("/controller/:targetCameraName", (ws: ws, req: Request) => {
   cameraWebSocket[targetCameraName].controllers[uuid] = ws;
 
   ws.on("close", (code: number, reason: Buffer) => {
+    console.log(
+      `Controller Client ${uuid} disconnected from ${targetCameraName}`
+    );
     delete cameraWebSocket[targetCameraName].controllers[uuid];
   });
 
@@ -74,6 +87,8 @@ app.ws("/controller/:targetCameraName", (ws: ws, req: Request) => {
     const buffer = msg as Uint8Array;
     cameraWebSocket[targetCameraName].ws.send(buffer);
   });
+  console.log(`Controller Client ${uuid} connected to ${targetCameraName}`);
 });
 
-app.listen(3000);
+console.log("Listening on port " + config.port);
+app.listen(config.port);

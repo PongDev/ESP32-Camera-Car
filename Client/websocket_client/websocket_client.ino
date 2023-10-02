@@ -5,6 +5,7 @@
 #include "esp_camera.h"
 #include "led.h"
 #include "motor.h"
+#include "ultrasonic.h"
 #include "websocket.h"
 
 //
@@ -41,6 +42,9 @@
 void startCameraServer();
 Websocket* websocket = NULL;
 Motor* motor = NULL;
+// UltraSonic* ultraSonic = NULL;
+unsigned long lastSendImageTime = 0;
+// unsigned long lastSendDistanceTime = 0;
 
 void setup() {
     Serial.begin(115200);
@@ -156,6 +160,9 @@ void setup() {
         config.motorPin.enbLeftBackwardPin,
         config.motorPin.enbRightForwardPin,
         config.motorPin.enbRightBackwardPin);
+
+    // Setup Ultra Sonic Pin
+    // ultraSonic = new UltraSonic(config.ultraSonicPin.trigPin, config.ultraSonicPin.echoPin);
 }
 
 void dataEventHandler(void* arg, esp_event_base_t base, int32_t id, void* data) {
@@ -255,10 +262,16 @@ void loop() {
     } else if (!websocket->isConnected()) {
         resetWebsocket();
     } else {
-        sendWebsocketPayload(getCameraImagePayload((char)1));
-        delay(1000 / config.fps == 0 ? 1 : config.fps);
+        if (millis() - lastSendImageTime > (1000 / config.fps == 0 ? 1 : config.fps)) {
+            sendWebsocketPayload(getCameraImagePayload((char)1));
+            lastSendImageTime = millis();
+        }
+        // if (millis() - lastSendDistanceTime > 100) {
+        //     sendWebsocketPayload(ultraSonic->getDistancePayload((char)2));
+        //     lastSendDistanceTime = millis();
+        // }
     }
-    if (millis() - motor->getLastActionTime() > 1000) {
+    if (millis() - motor->getLastActionTime() > 250) {
         motor->stop();
     }
 }

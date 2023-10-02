@@ -18,6 +18,10 @@ Config config{
         enbRightForwardPin : 0,
         enbRightBackwardPin : 0,
     },
+    ultraSonicPin : UltraSonicPin{
+        trigPin : 0,
+        echoPin : 0,
+    },
     fps : 10,
     cameraName : "Camera Name",
 };

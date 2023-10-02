@@ -57,6 +57,37 @@
           streamImage.src = await blobToBase64(e.data);
         });
       };
+
+      document.addEventListener("keydown", (e) => {
+        switch (e.keyCode) {
+          case "W".charCodeAt(0):
+            if (socket != null) {
+              socket.send(String.fromCharCode(2) + "F");
+            }
+            break;
+          case "A".charCodeAt(0):
+            if (socket != null) {
+              socket.send(String.fromCharCode(2) + "L");
+            }
+            break;
+          case "S".charCodeAt(0):
+            if (socket != null) {
+              socket.send(String.fromCharCode(2) + "B");
+            }
+            break;
+          case "D".charCodeAt(0):
+            if (socket != null) {
+              socket.send(String.fromCharCode(2) + "R");
+            }
+            break;
+        }
+      });
+
+      document.addEventListener("keyup", (e) => {
+        if (socket != null) {
+          socket.send(String.fromCharCode(2) + "X");
+        }
+      });
     </script>
   </body>
 </html>

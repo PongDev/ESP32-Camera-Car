@@ -2,6 +2,7 @@ import express, { Request } from "express";
 import expressWs from "express-ws";
 import ws from "ws";
 import { v4 as uuidv4 } from "uuid";
+import path from "path";
 
 const config = {
   port: 3000,
@@ -17,6 +18,10 @@ const cameraWebSocket: {
     };
   };
 } = {};
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "../index.html"));
+});
 
 app.get("/getCameraIDList", (req, res) => {
   res.send(JSON.stringify(Object.keys(cameraWebSocket)));
@@ -69,6 +74,9 @@ app.ws("/controller/:targetCameraName", (ws: ws, req: Request) => {
   if (!(targetCameraName in cameraWebSocket)) {
     ws.send(String.fromCharCode(0) + "Camera not found");
     ws.close();
+    console.log(
+      `Target Camera Name ${targetCameraName} not found`
+    );
     return;
   }
 

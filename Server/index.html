@@ -8,6 +8,15 @@
   <body>
     <img src="" alt="Stream" height="500px" id="stream" />
     <div>
+      <div>Server</div>
+      <input
+        type="text"
+        id="server"
+        placeholder="localhost:3000"
+        value="localhost:3000"
+      />
+    </div>
+    <div>
       <div>Camera Name</div>
       <input type="text" id="camera-name" />
       <button onclick="connectCamera()">Connect Camera</button>
@@ -49,7 +58,7 @@
           streamImage.src = "";
         }
         socket = new WebSocket(
-          `ws://localhost:3000/controller/${
+          `ws://${document.getElementById("server").value}/controller/${
             document.getElementById("camera-name").value
           }`
         );

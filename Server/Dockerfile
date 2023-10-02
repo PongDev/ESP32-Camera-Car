@@ -14,7 +14,8 @@ RUN pnpm build
 
 FROM base AS deploy
 
-COPY --from=builder /app/build/ /app/
+COPY --from=builder /app/build/ /app/build/
+COPY index.html /app/
 RUN pnpm i --prod
 
-CMD node index.js
+CMD node build/index.js
